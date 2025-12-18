@@ -58,7 +58,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <h4 class="activity-title">${act.name}</h4>
         <p class="activity-meta">ID: ${act.id}</p>
         <p class="activity-desc">${act.description || ''}</p>
-        <ul class="participants-list"></ul>
+        <div class="participants">
+          <h5>Participants</h5>
+          <ul class="participants-list"></ul>
+        </div>
       `;
 
       const ul = activityCard.querySelector('.participants-list');
@@ -67,8 +70,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  let activities;
+
   (async function () {
-    let activities = await loadActivities();
+    activities = await loadActivities();
 
     // ensure each activity has participants array
     activities = activities.map(a => ({ ...a, participants: Array.isArray(a.participants) ? a.participants.slice() : [] }));
@@ -137,3 +142,4 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
+});
