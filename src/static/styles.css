@@ -121,11 +121,29 @@ section h3 {
   margin: 0;
   padding-left: 1.25rem;
   color: #374151;
+  list-style-type: none;
 }
 
 .participants-list li {
   margin: 0.2rem 0;
   line-height: 1.25;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delete-participant {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.delete-participant:hover {
+  color: #b91c1c;
 }
 
 /* Empty state */

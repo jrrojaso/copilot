@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Intenta obtener actividades del endpoint, si falla usa datos de ejemplo
   async function loadActivities() {
     try {
-      const res = await fetch('/api/activities');
+      const res = await fetch('/activities');
       if (!res.ok) throw new Error('fetch failed');
       return await res.json();
     } catch {
@@ -31,7 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     participants.forEach(p => {
       const li = document.createElement('li');
-      li.textContent = p;
+      li.innerHTML = `
+        <span>${p}</span>
+        <button class="delete-participant" data-email="${p}" aria-label="Unregister ${p}">×</button>
+      `;
       ul.appendChild(li);
     });
   }
@@ -49,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // fill card
       const activityCard = document.createElement("div");
       activityCard.className = "activity-card";
+      activityCard.dataset.activityId = act.id;
 
       activityCard.innerHTML = `
         <h4 class="activity-title">${act.name}</h4>
@@ -82,22 +86,54 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Local update (optimistic). If you have an API, POST here and refresh from server.
-      const act = activities.find(a => a.id === activityId);
-      if (!act) {
-        messageDiv.textContent = 'Selected activity not found.';
+      // Call API to sign up
+      try {
+        const res = await fetch(`/activities/${encodeURIComponent(activityId)}/signup?email=${encodeURIComponent(email)}`, {
+          method: 'POST'
+        });
+        if (res.ok) {
+          // Reload activities from server
+          activities = await loadActivities();
+          activities = activities.map(a => ({ ...a, participants: Array.isArray(a.participants) ? a.participants.slice() : [] }));
+          renderActivities(activities);
+          signupForm.reset();
+          messageDiv.textContent = 'Signed up successfully!';
+          messageDiv.className = '';
+          setTimeout(() => { messageDiv.className = 'hidden'; }, 3000);
+        } else {
+          const error = await res.json();
+          messageDiv.textContent = error.detail || 'Failed to sign up';
+          messageDiv.className = '';
+        }
+      } catch {
+        messageDiv.textContent = 'Error signing up';
         messageDiv.className = '';
-        return;
       }
-      if (!act.participants.includes(email)) {
-        act.participants.push(email);
-      }
-
-      renderActivities(activities);
-      signupForm.reset();
-      messageDiv.textContent = 'Signed up successfully!';
-      messageDiv.className = '';
-      setTimeout(() => { messageDiv.className = 'hidden'; }, 3000);
     });
   })();
-});
+
+  // Event listener for delete buttons
+  activitiesList.addEventListener('click', async (event) => {
+    if (event.target.classList.contains('delete-participant')) {
+      const email = event.target.dataset.email;
+      const activityId = event.target.closest('.activity-card').dataset.activityId;
+      const act = activities.find(a => a.id === activityId);
+      if (!act) return;
+
+      try {
+        const res = await fetch(`/activities/${encodeURIComponent(activityId)}/unregister?email=${encodeURIComponent(email)}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          // Reload activities from server
+          activities = await loadActivities();
+          activities = activities.map(a => ({ ...a, participants: Array.isArray(a.participants) ? a.participants.slice() : [] }));
+          renderActivities(activities);
+        } else {
+          alert('Failed to unregister');
+        }
+      } catch {
+        alert('Error unregistering');
+      }
+    }
+  });
